@@ -15,6 +15,7 @@ pub struct WalletClient {
 #[derive(Debug)]
 pub enum Error {
     ReqwestError(reqwest::Error),
+    WalletError(response::WalletError),
 }
 
 impl fmt::Display for Error {
@@ -29,6 +30,12 @@ impl From<reqwest::Error> for Error {
     }
 }
 
+impl From<response::WalletError> for Error {
+    fn from(error: response::WalletError) -> Self {
+        Error::WalletError(error)
+    }
+}
+
 impl StdError for Error {}
 
 impl Error {
@@ -36,6 +43,10 @@ impl Error {
         use Error::*;
         match self {
             ReqwestError(e) => format!("reqwest error: {}", e),
+            WalletError(e) => format!(
+                "wallet error: code({}), message({}), data({})",
+                e.code, e.message, e.data
+            ),
         }
     }
 }
@@ -79,7 +90,41 @@ impl WalletClient {
         return Ok(());
     }
 
-    pub fn send(&self) {}
+    pub async fn send<C: Into<commands::Command>>(&self, cmd: C) -> Result<(), Error> {
+        let resp = self
+            .clt
+            .post(&self.endpoints.request)
+            .json(&request::Request::new_send_transaction(
+                cmd.into(),
+                &self.pubkey,
+            ))
+            .header("Origin", &self.endpoints.base_url)
+            .header("Authorization", &self.endpoints.token_header)
+            .send()
+            .await?;
+
+        // println!("resp: {}", resp.text().await?);
+        let resp_json = resp
+            .json::<response::Response<response::KeysResponse>>()
+            .await?;
+
+        match resp_json.error {
+            Some(e) => return Err(e.into()),
+            None => { /**/ }
+        };
+
+        return Ok(());
+
+        // {
+        //     Some(e) => return Err(e),
+        //     None => { /*othing to do*/ }
+        // }
+
+        // return Ok(resp
+        //     .json::<response::Response<response::KeysResponse>>()
+        //     .await?
+        //     .result);
+    }
 
     pub fn sign(&self) {}
 
@@ -92,32 +137,16 @@ impl WalletClient {
             .header("Authorization", &self.endpoints.token_header)
             .send()
             .await?;
-        return Ok(resp
+
+        let resp_json = resp
             .json::<response::Response<response::KeysResponse>>()
-            .await?
-            .result);
-    }
-}
+            .await?;
 
-#[cfg(test)]
-mod tests {
-    use super::commands::*;
-
-    #[test]
-    fn it_works() {
-        let command = Command::OrderCancellation(OrderCancellation {
-            order_id: "e5d5039ec7acb756a409c4b50fabf1f7923716ce65ddf618e460366a4c3912e4"
-                .to_string(),
-            market_id: "5d69ff4a485a9f963272c8614c1d0d84bb8ea57886f5b11aad53f0ccc77731ba"
-                .to_string(),
-        });
-
-        let pegged_order = PeggedOrder {
-            reference: PeggedReference::BestAsk,
-            offset: "100".to_string(),
+        match resp_json.error {
+            Some(e) => return Err(e.into()),
+            None => { /**/ }
         };
 
-        println!("{}", serde_json::to_string(&command).unwrap());
-        println!("{}", serde_json::to_string(&pegged_order).unwrap());
+        return Ok(resp_json.result.unwrap());
     }
 }

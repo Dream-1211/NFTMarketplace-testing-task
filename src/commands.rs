@@ -185,6 +185,30 @@ pub struct OrderAmendment {
     pub pegged_reference: i32,
 }
 
+/// Vote value
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum VoteValue {
+    /// Default value, always invalid
+    #[serde(rename = "VALUE_UNSPECIFIED")]
+    Unspecified = 0,
+    /// A vote against the proposal
+    #[serde(rename = "VALUE_NO")]
+    No = 1,
+    /// A vote in favour of the proposal
+    #[serde(rename = "VALUE_YES")]
+    Yes = 2,
+}
+
+/// A command to submit a new vote for a governance
+/// proposal.
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+pub struct VoteSubmission {
+    /// The ID of the proposal to vote for.
+    pub proposal_id: String,
+    /// The actual value of the vote
+    pub value: VoteValue,
+}
+
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum Command {
@@ -192,4 +216,11 @@ pub enum Command {
     OrderSubmission(OrderSubmission),
     OrderCancellation(OrderCancellation),
     OrderAmendment(OrderAmendment),
+    VoteSubmission(VoteSubmission),
+}
+
+impl From<VoteSubmission> for Command {
+    fn from(vs: VoteSubmission) -> Self {
+        Command::VoteSubmission(vs)
+    }
 }

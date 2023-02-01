@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 pub struct Response<T> {
     #[serde(rename = "jsonrpc")]
     pub version: String,
-    pub result: T,
+    pub result: Option<T>,
+    pub error: Option<WalletError>,
     pub id: String,
 }
 
@@ -20,4 +21,12 @@ pub struct KeysResponse {
 pub struct Key {
     pub name: String,
     pub public_key: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WalletError {
+    pub code: i64,
+    pub message: String,
+    pub data: String,
 }
