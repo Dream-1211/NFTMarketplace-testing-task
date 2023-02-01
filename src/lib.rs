@@ -103,27 +103,15 @@ impl WalletClient {
             .send()
             .await?;
 
-        // println!("resp: {}", resp.text().await?);
         let resp_json = resp
             .json::<response::Response<response::KeysResponse>>()
             .await?;
 
-        match resp_json.error {
-            Some(e) => return Err(e.into()),
-            None => { /**/ }
-        };
+        if let Some(e) = resp_json.error {
+            return Err(e.into());
+        }
 
         return Ok(());
-
-        // {
-        //     Some(e) => return Err(e),
-        //     None => { /*othing to do*/ }
-        // }
-
-        // return Ok(resp
-        //     .json::<response::Response<response::KeysResponse>>()
-        //     .await?
-        //     .result);
     }
 
     pub fn sign(&self) {}
@@ -142,10 +130,9 @@ impl WalletClient {
             .json::<response::Response<response::KeysResponse>>()
             .await?;
 
-        match resp_json.error {
-            Some(e) => return Err(e.into()),
-            None => { /**/ }
-        };
+        if let Some(e) = resp_json.error {
+            return Err(e.into());
+        }
 
         return Ok(resp_json.result.unwrap());
     }
