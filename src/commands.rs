@@ -876,6 +876,222 @@ pub struct VoteSubmission {
     pub value: VoteValue,
 }
 
+/// A command to submit an instruction to delegate some stake to a node
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DelegateSubmission {
+    /// The ID for the node to delegate to
+    pub node_id: String,
+    /// The amount of stake to delegate
+    pub amount: String,
+}
+
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UndelegateSubmission {
+    pub node_id: String,
+    /// optional, if not specified = ALL
+    pub amount: String,
+    pub method: UndelegateMethod,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum UndelegateMethod {
+    #[serde(rename = "METHOD_UNSPECIFIED")]
+    Unspecified = 0,
+    #[serde(rename = "METHOD_NOW")]
+    Now = 1,
+    #[serde(rename = "METHOD_AT_END_OF_EPOCH")]
+    AtEndOfEpoch = 2,
+}
+
+/// Various collateral/account types as used by Vega
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum AccountType {
+    /// Default value
+    #[serde(rename = "ACCOUNT_TYPE_UNSPECIFIED")]
+    Unspecified = 0,
+    /// Insurance pool accounts contain insurance pool funds for a market
+    #[serde(rename = "ACCOUNT_TYPE_INSURANCE")]
+    Insurance = 1,
+    /// Settlement accounts exist only during settlement or mark-to-market
+    #[serde(rename = "ACCOUNT_TYPE_SETTLEMENT")]
+    Settlement = 2,
+    /// Margin accounts contain funds set aside for the margin needed to support a party's open positions.
+    /// Each party will have a margin account for each market they have traded in.
+    /// The required initial margin is allocated to each market from your general account.
+    /// Collateral in the margin account can't be withdrawn or used as margin on another market until
+    /// it is released back to the general account.
+    /// The Vega protocol uses an internal accounting system to segregate funds held as
+    /// margin from other funds to ensure they are never lost or 'double spent'
+    ///
+    /// Margin account funds will vary as margin requirements on positions change
+    #[serde(rename = "ACCOUNT_TYPE_MARGIN")]
+    Margin = 3,
+    /// General accounts contain the collateral for a party that is not otherwise allocated. A party will
+    /// have multiple general accounts, one for each asset they want
+    /// to trade with
+    ///
+    /// General accounts are where funds are initially deposited or withdrawn from,
+    /// it is also the account where funds are taken to fulfil fees and initial margin requirements
+    #[serde(rename = "ACCOUNT_TYPE_GENERAL")]
+    General = 4,
+    /// Infrastructure accounts contain fees earned by providing infrastructure on Vega
+    #[serde(rename = "ACCOUNT_TYPE_FEES_INFRASTRUCTURE")]
+    FeesInfrastructure = 5,
+    /// Liquidity accounts contain fees earned by providing liquidity on Vega markets
+    #[serde(rename = "ACCOUNT_TYPE_FEES_LIQUIDITY")]
+    FeesLiquidity = 6,
+    /// This account is created to hold fees earned by placing orders that sit on the book
+    /// and are then matched with an incoming order to create a trade - These fees reward parties
+    /// who provide the best priced liquidity that actually allows trading to take place
+    #[serde(rename = "ACCOUNT_TYPE_FEES_MAKER")]
+    FeesMaker = 7,
+    /// This account is created to maintain liquidity providers funds commitments
+    #[serde(rename = "ACCOUNT_TYPE_BOND")]
+    Bond = 9,
+    /// External account represents an external source (deposit/withdrawal)
+    #[serde(rename = "ACCOUNT_TYPE_EXTERNAL")]
+    External = 10,
+    /// Global insurance account for the asset
+    #[serde(rename = "ACCOUNT_TYPE_GLOBAL_INSURANCE")]
+    GlobalInsurance = 11,
+    /// Global reward account for the asset
+    #[serde(rename = "ACCOUNT_TYPE_GLOBAL_REWARD")]
+    GlobalReward = 12,
+    /// Per asset account used to store pending transfers (if any)
+    #[serde(rename = "ACCOUNT_TYPE_PENDING_TRANSFERS")]
+    PendingTransfers = 13,
+    /// Per asset reward account for fees paid to makers
+    #[serde(rename = "ACCOUNT_TYPE_REWARD_MAKER_PAID_FEES")]
+    RewardMakerPaidFees = 14,
+    /// Per asset reward account for fees received by makers
+    #[serde(rename = "ACCOUNT_TYPE_REWARD_MAKER_RECEIVED_FEES")]
+    RewardMakerReceivedFees = 15,
+    /// Per asset reward account for fees received by liquidity providers
+    #[serde(rename = "ACCOUNT_TYPE_REWARD_LP_RECEIVED_FEES")]
+    RewardLpReceivedFees = 16,
+    /// Per asset reward account for market proposers when the market goes above some trading threshold
+    #[serde(rename = "ACCOUNT_TYPE_REWARD_MARKET_PROPOSERS")]
+    RewardMarketProposers = 17,
+}
+
+/// A transfer initiated by a party
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Transfer {
+    /// The account type from which the funds of the party
+    /// should be taken
+    pub from_account_type: AccountType,
+    /// The public key of the destination account
+    pub to: String,
+    /// The type of the destination account
+    pub to_account_type: AccountType,
+    /// The asset
+    pub asset: String,
+    /// The amount to be taken from the source account
+    pub amount: String,
+    /// The reference to be attached to the transfer
+    pub reference: String,
+    /// Specific details of the transfer
+    pub kind: Option<TransferKind>,
+}
+
+/// Specific details for a one off transfer
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OneOffTransfer {
+    /// A unix timestamp in second. Time at which the
+    /// transfer should be delivered in the to account
+    pub deliver_on: i64,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum DispatchMetric {
+    #[serde(rename = "DISPATCH_METRIC_UNSPECIFIED")]
+    Unspecified = 0,
+    /// Dispatch metric that is using the total maker fees paid in the market
+    #[serde(rename = "DISPATCH_METRIC_MAKER_FEES_PAID")]
+    MakerFeesPaid = 1,
+    /// Dispatch metric that is using the total maker fees received in the market
+    #[serde(rename = "DISPATCH_METRIC_MAKER_FEES_RECEIVED")]
+    MakerFeesReceived = 2,
+    /// Dispatch metric that is using the total LP fees received in the market
+    #[serde(rename = "DISPATCH_LP_FEES_RECEIVED")]
+    LpFeesReceived = 3,
+    /// Dispatch metric that is using total value of the market if above the required threshold and not paid given proposer bonus yet
+    #[serde(rename = "DISPATCH_METRIC_MARKET_VALUE")]
+    MarketValue = 4,
+}
+
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DispatchStrategy {
+    /// The asset to use for metric
+    pub asset_for_metric: String,
+    /// The metric to apply
+    pub metric: DispatchMetric,
+    /// Optional markets in scope
+    pub markets: Vec<String>,
+}
+
+/// Specific details for a recurring transfer
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RecurringTransfer {
+    /// The first epoch from which this transfer shall be paid
+    pub start_epoch: u64,
+    /// The last epoch at which this transfer shall be paid
+    pub end_epoch: ::core::option::Option<u64>,
+    /// factor needs to be > 0
+    pub factor: String,
+    /// optional parameter defining how a transfer is dispatched
+    pub dispatch_strategy: Option<DispatchStrategy>,
+}
+
+/// Specific details of the transfer
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TransferKind {
+    OneOff(OneOffTransfer),
+    Recurring(RecurringTransfer),
+}
+
+/// A request for cancelling a recurring transfer
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CancelTransfer {
+    /// The ID of the transfer to cancel
+    pub transfer_id: String,
+}
+
+/// Command to submit new Oracle data from third party providers
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OracleDataSubmission {
+    /// The source from which the data is coming from. Must be base64 encoded.
+    /// Oracle data a type of external data source data.
+    pub source: OracleSource,
+    /// The data provided by the data source
+    /// In the case of Open Oracle - it will be the entire object - it will contain messages, signatures and price data
+    pub payload: Vec<u8>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum OracleSource {
+    /// The default value
+    #[serde(rename = "ORACLE_SOURCE_UNSPECIFIED")]
+    Unspecified = 0,
+    /// Specifies that the payload will be base64 encoded JSON conforming to the Open Oracle standard
+    #[serde(rename = "ORACLE_SOURCE_OPEN_ORACLE")]
+    OpenOracle = 1,
+    /// Specifies that the payload will be base64 encoded JSON, but does not specify the shape of the data
+    #[serde(rename = "ORACLE_SOURCE_JSON")]
+    Json = 2,
+}
+
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum Command {
@@ -889,6 +1105,11 @@ pub enum Command {
     WithdrawSubmission(WithdrawSubmission),
     ProposalSubmission(ProposalSubmission),
     VoteSubmission(VoteSubmission),
+    DelegateSubmisson(DelegateSubmission),
+    UndelegateSubmission(UndelegateSubmission),
+    Transfer(Transfer),
+    CancelTransfer(CancelTransfer),
+    OracleDataSubmission(OracleDataSubmission),
 }
 
 impl From<BatchMarketInstructions> for Command {
@@ -948,5 +1169,23 @@ impl From<ProposalSubmission> for Command {
 impl From<VoteSubmission> for Command {
     fn from(cmd: VoteSubmission) -> Self {
         Command::VoteSubmission(cmd)
+    }
+}
+
+impl From<DelegateSubmission> for Command {
+    fn from(cmd: DelegateSubmission) -> Self {
+        Command::DelegateSubmisson(cmd)
+    }
+}
+
+impl From<UndelegateSubmission> for Command {
+    fn from(cmd: UndelegateSubmission) -> Self {
+        Command::UndelegateSubmission(cmd)
+    }
+}
+
+impl From<OracleDataSubmission> for Command {
+    fn from(cmd: OracleDataSubmission) -> Self {
+        Command::OracleDataSubmission(cmd)
     }
 }
