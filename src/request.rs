@@ -40,6 +40,15 @@ impl Request {
         };
     }
 
+    pub fn new_sign_transaction(cmd: Command, pubkey: &str) -> Request {
+        return Request {
+            version: "2.0".to_string(),
+            method: "client.sign_transaction".to_string(),
+            params: Some(Params::new(cmd, pubkey)),
+            id: rand::random::<u64>().to_string(),
+        };
+    }
+
     pub fn new_list_keys() -> Request {
         return Request {
             version: "2.0".to_string(),

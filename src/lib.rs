@@ -1,4 +1,5 @@
 use reqwest;
+use response::{SendResponse, SignResponse};
 use std::error::Error as StdError;
 use std::fmt;
 
@@ -69,6 +70,18 @@ impl Endpoints {
     }
 }
 
+trait WalletHeaders {
+    fn wallet_headers(self, endpoints: &Endpoints) -> reqwest::RequestBuilder;
+}
+
+impl WalletHeaders for reqwest::RequestBuilder {
+    fn wallet_headers(self, endpoints: &Endpoints) -> reqwest::RequestBuilder {
+        return self
+            .header("Origin", &endpoints.base_url)
+            .header("Authorization", &endpoints.token_header);
+    }
+}
+
 impl WalletClient {
     pub async fn new(
         wallet_address: &str,
@@ -90,7 +103,7 @@ impl WalletClient {
         return Ok(());
     }
 
-    pub async fn send<C: Into<commands::Command>>(&self, cmd: C) -> Result<(), Error> {
+    pub async fn send<C: Into<commands::Command>>(&self, cmd: C) -> Result<SendResponse, Error> {
         let resp = self
             .clt
             .post(&self.endpoints.request)
@@ -98,31 +111,50 @@ impl WalletClient {
                 cmd.into(),
                 &self.pubkey,
             ))
-            .header("Origin", &self.endpoints.base_url)
-            .header("Authorization", &self.endpoints.token_header)
+            .wallet_headers(&self.endpoints)
             .send()
             .await?;
 
         let resp_json = resp
-            .json::<response::Response<response::KeysResponse>>()
+            .json::<response::Response<response::SendResponse>>()
             .await?;
 
         if let Some(e) = resp_json.error {
             return Err(e.into());
         }
 
-        return Ok(());
+        return Ok(resp_json.result.unwrap());
     }
 
-    pub fn sign(&self) {}
+    pub async fn sign<C: Into<commands::Command>>(&self, cmd: C) -> Result<SignResponse, Error> {
+        let resp = self
+            .clt
+            .post(&self.endpoints.request)
+            .json(&request::Request::new_sign_transaction(
+                cmd.into(),
+                &self.pubkey,
+            ))
+            .wallet_headers(&self.endpoints)
+            .send()
+            .await?;
+
+        let resp_json = resp
+            .json::<response::Response<response::SignResponse>>()
+            .await?;
+
+        if let Some(e) = resp_json.error {
+            return Err(e.into());
+        }
+
+        return Ok(resp_json.result.unwrap());
+    }
 
     pub async fn list_keys(&self) -> Result<response::KeysResponse, Error> {
         let resp = self
             .clt
             .post(&self.endpoints.request)
             .json(&request::Request::new_list_keys())
-            .header("Origin", &self.endpoints.base_url)
-            .header("Authorization", &self.endpoints.token_header)
+            .wallet_headers(&self.endpoints)
             .send()
             .await?;
 

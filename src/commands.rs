@@ -185,6 +185,672 @@ pub struct OrderAmendment {
     pub pegged_reference: i32,
 }
 
+/// Represents a liquidity order
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LiquidityOrder {
+    /// The pegged reference point for the order
+    pub reference: PeggedReference,
+    /// The relative proportion of the commitment to be allocated at a price level
+    pub proportion: u32,
+    /// The offset/amount of units away for the order
+    pub offset: String,
+}
+
+/// A liquidity provision submitted for a given market
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LiquidityProvisionSubmission {
+    /// Market identifier for the order, required field
+    pub market_id: String,
+    /// Specified as a unitless number that represents the amount of settlement asset of the market
+    pub commitment_amount: String,
+    /// Nominated liquidity fee factor, which is an input to the calculation of taker fees on the market, as per setting fees and rewarding liquidity providers
+    pub fee: String,
+    /// A set of liquidity sell orders to meet the liquidity provision obligation
+    pub sells: Vec<LiquidityOrder>,
+    /// A set of liquidity buy orders to meet the liquidity provision obligation
+    pub buys: Vec<LiquidityOrder>,
+    /// A reference to be added to every order created out of this liquidityProvisionSubmission
+    pub reference: String,
+}
+
+/// Cancel a liquidity provision request
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LiquidityProvisionCancellation {
+    /// Unique ID for the market with the liquidity provision to be cancelled
+    pub market_id: String,
+}
+
+/// Amend a liquidity provision request
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LiquidityProvisionAmendment {
+    /// Unique ID for the market with the liquidity provision to be amended
+    pub market_id: String,
+    /// an empty strings means no change
+    pub commitment_amount: String,
+    /// an empty strings means no change
+    pub fee: String,
+    /// empty slice means no change
+    pub sells: Vec<LiquidityOrder>,
+    /// empty slice means no change
+    pub buys: Vec<LiquidityOrder>,
+    /// empty string means no change
+    pub reference: String,
+}
+
+/// An extension of data required for the withdraw submissions
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Erc20WithdrawExt {
+    /// The address into which the bridge will release the funds
+    pub receiver_address: String,
+}
+
+/// Foreign chain specifics
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum WithdrawExt {
+    /// ERC20 withdrawal details
+    Erc20(Erc20WithdrawExt),
+}
+
+/// Represents the submission request to withdraw funds for a party on Vega
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WithdrawSubmission {
+    /// The amount to be withdrawn
+    pub amount: String,
+    /// The asset to be withdrawn
+    pub asset: String,
+    /// Foreign chain specifics
+    pub ext: Option<WithdrawExt>,
+}
+
+/// The rationale behind a proposal.
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProposalRationale {
+    /// Description to show a short title / something in case the link goes offline.
+    /// This is to be between 0 and 20k unicode characters.
+    /// This is mandatory for all proposals.
+    pub description: String,
+    /// Title to be used to give a short description of the proposal in lists.
+    /// This is to be between 0 and 100 unicode characters.
+    /// This is mandatory for all proposals.
+    pub title: String,
+}
+
+/// DataSourceSpecConfigurationTime is the internal data source used for emitting timestamps.
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DataSourceSpecConfigurationTime {
+    /// Conditions that the timestamps should meet in order to be considered.
+    pub conditions: Vec<DataCondition>,
+}
+
+/// DataSourceDefinitionInternal is the top level object used for all internal data sources.
+/// It contains one of any of the defined `SourceType` variants.
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DataSourceDefinitionInternal {
+    /// Types of internal data sources
+    pub source_type: Option<InternalSourceType>,
+}
+
+/// Types of internal data sources
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum InternalSourceType {
+    Time(DataSourceSpecConfigurationTime),
+}
+
+/// DataSourceDefinitionExternal is the top level object used for all external data sources.
+/// It contains one of any of the defined `SourceType` variants.
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DataSourceDefinitionExternal {
+    /// Types of External data sources
+    pub source_type: Option<ExternalSourceType>,
+}
+
+/// Types of External data sources
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ExternalSourceType {
+    Oracle(DataSourceSpecConfiguration),
+}
+
+/// Filter describes the conditions under which a data source data is considered of
+/// interest or not.
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DataFilter {
+    /// key is the data source data property key targeted by the filter.
+    pub key: Option<DataPropertyKey>,
+    /// conditions are the conditions that should be matched by the data to be
+    /// considered of interest.
+    pub conditions: Vec<DataCondition>,
+}
+
+/// PropertyKey describes the property key contained in an data source data.
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DataPropertyKey {
+    /// name is the name of the property.
+    pub name: String,
+    /// type is the type of the property.
+    pub r#type: PropertyKeyType,
+}
+
+/// Condition describes the condition that must be validated by the network
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DataCondition {
+    /// comparator is the type of comparison to make on the value.
+    pub operator: DataConditionOperator,
+    /// value is used by the comparator.
+    pub value: String,
+}
+
+/// Comparator describes the type of comparison.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum DataConditionOperator {
+    /// The default value
+    #[serde(rename = "OPERATOR_UNSPECIFIED")]
+    Unspecified = 0,
+    /// Verify if the property values are strictly equal or not.
+    #[serde(rename = "OPERATOR_EQUALS")]
+    Equals = 1,
+    /// Verify if the data source data value is greater than the Condition value.
+    #[serde(rename = "OPERATOR_GREATER_THAN")]
+    GreaterThan = 2,
+    /// Verify if the data source data value is greater than or equal to the Condition
+    /// value.
+    #[serde(rename = "OPERATOR_GREATER_THAN_OR_EQUAL")]
+    GreaterThanOrEqual = 3,
+    /// Verify if the data source data value is less than the Condition value.
+    #[serde(rename = "OPERATOR_LESS_THAN")]
+    LessThan = 4,
+    /// Verify if the data source data value is less or equal to than the Condition
+    /// value.
+    #[serde(rename = "OPERATOR_LESS_THAN_OR_EQUAL")]
+    LessThanOrEqual = 5,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+/// Type describes the type of properties that are supported by the data source
+/// engine.
+pub enum PropertyKeyType {
+    /// The default value.
+    #[serde(rename = "TYPE_UNSPECIFIED")]
+    Unspecified = 0,
+    /// Any type.
+    #[serde(rename = "TYPE_EMPTY")]
+    Empty = 1,
+    /// Integer type.
+    #[serde(rename = "TYPE_INTEGER")]
+    Integer = 2,
+    /// String type.
+    #[serde(rename = "TYPE_STRING")]
+    String = 3,
+    /// Boolean type.
+    #[serde(rename = "TYPE_BOOLEAN")]
+    Boolean = 4,
+    /// Any floating point decimal type.
+    #[serde(rename = "TYPE_DECIMAL")]
+    Decimal = 5,
+    /// Timestamp date type.
+    #[serde(rename = "TYPE_TIMESTAMP")]
+    Timestamp = 6,
+}
+
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EthAddress {
+    pub address: String,
+}
+
+/// PubKey is the public key that signed this data.
+/// Different public keys coming from different sources will be further separated.
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PubKey {
+    pub key: String,
+}
+
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DataSigner {
+    pub signer: Option<DataSignerOneOff>,
+}
+
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum DataSignerOneOff {
+    /// pubKeys is the list of authorized public keys that signed the data for this
+    /// source. All the public keys in the data should be contained in these
+    /// public keys.
+    PubKey(PubKey),
+    /// in case of an open oracle - Ethereum address will be submitted
+    EthAddress(EthAddress),
+}
+
+/// All types of external data sources use the same configuration set for meeting requirements
+/// in order for the data to be useful for Vega - valid signatures and matching filters.
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DataSourceSpecConfiguration {
+    /// signers is the list of authorized signatures that signed the data for this
+    /// source. All the signatures in the data source data should be contained in this
+    /// external source. All the signatures in the data should be contained in this list.
+    pub signers: Vec<DataSigner>,
+    /// filters describes which source data are considered of interest or not for
+    /// the product (or the risk model).
+    pub filters: Vec<DataFilter>,
+}
+
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SourceType {
+    Internal(DataSourceDefinitionInternal),
+    External(DataSourceDefinitionExternal),
+}
+
+/// DataSourceDefinition represents the top level object that deals with data sources.
+/// DataSourceDefinition can be external or internal, with whatever number of data sources are defined
+/// for each type in the child objects below.
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DataSourceDefinition {
+    pub source_type: Option<SourceType>,
+}
+
+/// Future product configuration
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FutureProduct {
+    /// Asset ID for the product's settlement asset
+    pub settlement_asset: String,
+    /// Product quote name
+    pub quote_name: String,
+    /// The data source spec describing the data source for settlement
+    pub data_source_spec_for_settlement_data: Option<DataSourceDefinition>,
+    /// The external data source spec describing the data source of trading termination
+    pub data_source_spec_for_trading_termination: Option<DataSourceDefinition>,
+    /// The binding between the data source spec and the settlement data
+    pub data_source_spec_binding: Option<DataSourceSpecToFutureBinding>,
+    /// The number of decimal places implied by the settlement data (such as price) emitted by the settlement data source
+    pub settlement_data_decimals: u32,
+}
+
+/// Product specification
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Product {
+    /// Future
+    Future(FutureProduct),
+}
+
+/// Instrument configuration
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct InstrumentConfiguration {
+    /// Instrument name
+    pub name: String,
+    /// Instrument code, human-readable shortcode used to describe the instrument
+    pub code: String,
+    /// Product specification
+    pub product: Option<Product>,
+}
+
+/// PriceMonitoringTrigger holds together price projection horizon τ, probability level p, and auction extension duration
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PriceMonitoringTrigger {
+    /// Price monitoring projection horizon τ in seconds
+    pub horizon: i64,
+    /// Price monitoring probability level p
+    pub probability: String,
+    /// Price monitoring auction extension duration in seconds should the price
+    /// breach its theoretical level over the specified horizon at the specified
+    /// probability level
+    pub auction_extension: i64,
+}
+
+/// PriceMonitoringParameters contains a collection of triggers to be used for a given market
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PriceMonitoringParameters {
+    pub triggers: Vec<PriceMonitoringTrigger>,
+}
+
+/// LiquidityMonitoringParameters contains settings used for liquidity monitoring
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LiquidityMonitoringParameters {
+    /// Specifies parameters related to target stake calculation
+    pub target_stake_parameters: Option<TargetStakeParameters>,
+    /// Specifies the triggering ratio for entering liquidity auction
+    pub triggering_ratio: f64,
+    /// Specifies by how many seconds an auction should be extended if leaving the auction were to trigger a liquidity auction
+    pub auction_extension: i64,
+}
+/// TargetStakeParameters contains parameters used in target stake calculation
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TargetStakeParameters {
+    /// Specifies length of time window expressed in seconds for target stake calculation
+    pub time_window: i64,
+    /// Specifies scaling factors used in target stake calculation
+    pub scaling_factor: f64,
+}
+
+/// Configuration for a new market on Vega
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NewMarketConfiguration {
+    /// New market instrument configuration
+    pub instrument: Option<InstrumentConfiguration>,
+    /// Decimal places used for the new market, sets the smallest price increment on the book
+    pub decimal_places: u64,
+    /// Optional new market meta data, tags
+    pub metadata: Vec<String>,
+    /// Price monitoring parameters
+    pub price_monitoring_parameters: Option<PriceMonitoringParameters>,
+    /// Liquidity monitoring parameters
+    pub liquidity_monitoring_parameters: Option<LiquidityMonitoringParameters>,
+    /// Decimal places for order sizes, sets what size the smallest order / position on the market can be
+    pub position_decimal_places: i64,
+    /// Percentage move up and down from the mid price which specifies the range of
+    /// price levels over which automated liquidity provision orders will be deployed
+    pub lp_price_range: String,
+    /// New market risk model parameters
+    pub risk_parameters: Option<RiskParameters>,
+}
+
+/// New market on Vega
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NewMarket {
+    /// The configuration of the new market
+    pub changes: Option<NewMarketConfiguration>,
+}
+
+/// Update an existing market on Vega
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateMarket {
+    /// The identifier of the market to update
+    pub market_id: String,
+    /// The updated configuration of the market
+    pub changes: Option<UpdateMarketConfiguration>,
+}
+
+/// Configuration to update a market on Vega
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateMarketConfiguration {
+    /// Updated market instrument configuration
+    pub instrument: Option<UpdateInstrumentConfiguration>,
+    /// Optional market metadata, tags
+    pub metadata: Vec<String>,
+    /// Price monitoring parameters
+    pub price_monitoring_parameters: Option<PriceMonitoringParameters>,
+    /// Liquidity monitoring parameters
+    pub liquidity_monitoring_parameters: Option<LiquidityMonitoringParameters>,
+    /// Percentage move up and down from the mid price which specifies the range of
+    /// price levels over which automated liquidity provision orders will be deployed
+    pub lp_price_range: String,
+    /// Updated market risk model parameters
+    pub risk_parameters: Option<RiskParameters>,
+}
+
+/// Risk model parameters for log normal
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LogNormalModelParams {
+    /// Mu parameter, annualised growth rate of the underlying asset
+    pub mu: f64,
+    /// R parameter, annualised growth rate of the risk-free asset, used for discounting of future cash flows, can be any real number
+    pub r: f64,
+    /// Sigma parameter, annualised volatility of the underlying asset, must be a strictly non-negative real number
+    pub sigma: f64,
+}
+
+/// Risk model for log normal
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LogNormalRiskModel {
+    /// Risk Aversion Parameter
+    pub risk_aversion_parameter: f64,
+    /// Tau parameter of the risk model, projection horizon measured as a year fraction used in the expected shortfall calculation to obtain the maintenance margin, must be a strictly non-negative real number
+    pub tau: f64,
+    /// Risk model parameters for log normal
+    pub params: Option<LogNormalModelParams>,
+}
+
+/// Updated market risk model parameters
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum RiskParameters {
+    /// Log normal risk model parameters, valid only if MODEL_LOG_NORMAL is selected
+    LogNormal(LogNormalRiskModel),
+}
+
+/// Product specification
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum UpdateProduct {
+    /// Future
+    Future(UpdateFutureProduct),
+}
+
+/// Instrument configuration
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateInstrumentConfiguration {
+    /// Instrument code, human-readable shortcode used to describe the instrument
+    pub code: String,
+    /// Product specification
+    pub product: Option<UpdateProduct>,
+}
+
+/// DataSourceSpecToFutureBinding describes which property of the data source data is to be
+/// used as settlement data and which to use as the trading terminated trigger
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DataSourceSpecToFutureBinding {
+    /// settlement_data_property holds the name of the property in the source data
+    /// that should be used as settlement data.
+    /// If it is set to "prices.BTC.value", then the Future will use the value of
+    /// this property as settlement data.
+    pub settlement_data_property: String,
+    /// the name of the property in the data source data that signals termination of trading
+    pub trading_termination_property: String,
+}
+
+/// Future product configuration
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateFutureProduct {
+    /// Human-readable name/abbreviation of the quote name
+    pub quote_name: String,
+    /// The data source spec describing the data of settlement data
+    pub data_source_spec_for_settlement_data: Option<DataSourceDefinition>,
+    /// The data source spec describing the data source for trading termination
+    pub data_source_spec_for_trading_termination: Option<DataSourceDefinition>,
+    /// The binding between the data source spec and the settlement data
+    pub data_source_spec_binding: Option<DataSourceSpecToFutureBinding>,
+    /// The number of decimal places implied by the settlement data (such as price) emitted by the settlement external data source
+    pub settlement_data_decimals: u32,
+}
+
+/// Represents a network parameter on Vega
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NetworkParameter {
+    /// The unique key
+    pub key: String,
+    /// The value for the network parameter
+    pub value: String,
+}
+
+/// Update network configuration on Vega
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateNetworkParameter {
+    /// The network parameter to update
+    pub changes: Option<NetworkParameter>,
+}
+
+/// An ERC20 token based asset, living on the ethereum network
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Erc20Asset {
+    /// The address of the contract for the token, on the ethereum network
+    pub contract_address: String,
+    /// The lifetime limits deposit per address
+    /// note: this is a temporary measure that can be changed by governance
+    pub lifetime_limit: String,
+    /// The maximum you can withdraw instantly. All withdrawals over the threshold will be delayed by the withdrawal delay.
+    /// There’s no limit on the size of a withdrawal
+    /// note: this is a temporary measure that can be changed by governance
+    pub withdraw_threshold: String,
+}
+
+/// The source
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum AssetSource {
+    /// An Ethereum ERC20 asset
+    Erc20(Erc20Asset),
+}
+
+/// The Vega representation of an external asset
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AssetDetails {
+    /// Name of the asset (e.g: Great British Pound)
+    pub name: String,
+    /// Symbol of the asset (e.g: GBP)
+    pub symbol: String,
+    /// Number of decimal / precision handled by this asset
+    pub decimals: u64,
+    /// The minimum economically meaningful amount in the asset
+    pub quantum: String,
+    /// The source
+    pub source: Option<AssetSource>,
+}
+
+/// New asset on Vega
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NewAsset {
+    /// The configuration of the new asset
+    pub changes: Option<AssetDetails>,
+}
+
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Erc20AssetUpdate {
+    /// The lifetime limits deposit per address.
+    /// This is will be interpreted against the asset decimals.
+    /// note: this is a temporary measure that can be changed by governance
+    pub lifetime_limit: String,
+    /// The maximum you can withdraw instantly. All withdrawals over the threshold will be delayed by the withdrawal delay.
+    /// There’s no limit on the size of a withdrawal
+    /// note: this is a temporary measure that can be changed by governance
+    pub withdraw_threshold: String,
+}
+
+/// The source
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum AssetUpdateSource {
+    /// An Ethereum ERC20 asset
+    Erc20(Erc20AssetUpdate),
+}
+
+/// The changes to apply on an existing asset.
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AssetDetailsUpdate {
+    /// The minimum economically meaningful amount in the asset
+    pub quantum: String,
+    /// The source
+    pub source: Option<AssetUpdateSource>,
+}
+
+/// Update an existing asset on Vega
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateAsset {
+    /// The ID of the asset to be updated
+    pub asset_id: String,
+    /// The changes to apply on an existing asset
+    pub changes: Option<AssetDetailsUpdate>,
+}
+
+/// Freeform proposal
+/// This message is just used as a placeholder to sort out the nature of the
+/// proposal once parsed.
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NewFreeform {}
+
+/// Changes being proposed via governance
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ProposalChange {
+    /// Proposal change for modifying an existing market on Vega
+    UpdateMarket(UpdateMarket),
+    /// Proposal change for creating new market on Vega
+    NewMarket(NewMarket),
+    /// Proposal change for updating Vega network parameters
+    UpdateNetworkParameter(UpdateNetworkParameter),
+    /// Proposal change for creating new assets on Vega
+    NewAsset(NewAsset),
+    /// Proposal change for a freeform request, which can be voted on but does not change the behaviour of the system,
+    /// and can be used to gauge community sentiment
+    NewFreeform(NewFreeform),
+    /// Proposal change for updating an asset
+    UpdateAsset(UpdateAsset),
+}
+
+/// Terms for a governance proposal on Vega
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProposalTerms {
+    /// Timestamp (Unix time in seconds) when voting closes for this proposal,
+    /// constrained by `minClose` and `maxClose` network parameters
+    pub closing_timestamp: i64,
+    /// Timestamp (Unix time in seconds) when proposal gets enacted (if passed),
+    /// constrained by `minEnact` and `maxEnact` network parameters
+    pub enactment_timestamp: i64,
+    /// Validation timestamp (Unix time in seconds)
+    pub validation_timestamp: i64,
+    /// Changes being proposed
+    pub change: Option<ProposalChange>,
+}
+
+/// A command to submit a new proposal for the
+/// Vega network governance
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProposalSubmission {
+    /// Proposal reference
+    pub reference: String,
+    /// Proposal configuration and the actual change that is meant to be executed when proposal is enacted
+    pub terms: Option<ProposalTerms>,
+    /// The rationale behind a proposal.
+    pub rationale: Option<ProposalRationale>,
+}
+
 /// Vote value
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum VoteValue {
@@ -202,6 +868,7 @@ pub enum VoteValue {
 /// A command to submit a new vote for a governance
 /// proposal.
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct VoteSubmission {
     /// The ID of the proposal to vote for.
     pub proposal_id: String,
@@ -216,11 +883,70 @@ pub enum Command {
     OrderSubmission(OrderSubmission),
     OrderCancellation(OrderCancellation),
     OrderAmendment(OrderAmendment),
+    LiquidityProvisionSubmission(LiquidityProvisionSubmission),
+    LiquidityProvisionCancellation(LiquidityProvisionCancellation),
+    LiquidityProvisionAmendment(LiquidityProvisionAmendment),
+    WithdrawSubmission(WithdrawSubmission),
+    ProposalSubmission(ProposalSubmission),
     VoteSubmission(VoteSubmission),
 }
 
+impl From<BatchMarketInstructions> for Command {
+    fn from(cmd: BatchMarketInstructions) -> Self {
+        Command::BatchMarketInstructions(cmd)
+    }
+}
+
+impl From<OrderSubmission> for Command {
+    fn from(cmd: OrderSubmission) -> Self {
+        Command::OrderSubmission(cmd)
+    }
+}
+
+impl From<OrderCancellation> for Command {
+    fn from(cmd: OrderCancellation) -> Self {
+        Command::OrderCancellation(cmd)
+    }
+}
+
+impl From<OrderAmendment> for Command {
+    fn from(cmd: OrderAmendment) -> Self {
+        Command::OrderAmendment(cmd)
+    }
+}
+
+impl From<LiquidityProvisionSubmission> for Command {
+    fn from(cmd: LiquidityProvisionSubmission) -> Self {
+        Command::LiquidityProvisionSubmission(cmd)
+    }
+}
+
+impl From<LiquidityProvisionCancellation> for Command {
+    fn from(cmd: LiquidityProvisionCancellation) -> Self {
+        Command::LiquidityProvisionCancellation(cmd)
+    }
+}
+
+impl From<LiquidityProvisionAmendment> for Command {
+    fn from(cmd: LiquidityProvisionAmendment) -> Self {
+        Command::LiquidityProvisionAmendment(cmd)
+    }
+}
+
+impl From<WithdrawSubmission> for Command {
+    fn from(cmd: WithdrawSubmission) -> Self {
+        Command::WithdrawSubmission(cmd)
+    }
+}
+
+impl From<ProposalSubmission> for Command {
+    fn from(cmd: ProposalSubmission) -> Self {
+        Command::ProposalSubmission(cmd)
+    }
+}
+
 impl From<VoteSubmission> for Command {
-    fn from(vs: VoteSubmission) -> Self {
-        Command::VoteSubmission(vs)
+    fn from(cmd: VoteSubmission) -> Self {
+        Command::VoteSubmission(cmd)
     }
 }
