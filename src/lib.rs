@@ -1,5 +1,7 @@
 use reqwest;
 use response::{SendResponse, SignResponse};
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use std::error::Error as StdError;
 use std::fmt;
 
@@ -104,63 +106,43 @@ impl WalletClient {
     }
 
     pub async fn send<C: Into<commands::Command>>(&self, cmd: C) -> Result<SendResponse, Error> {
-        let resp = self
-            .clt
-            .post(&self.endpoints.request)
-            .json(&request::Request::new_send_transaction(
+        return self
+            .request::<_, response::SendResponse>(request::Request::new_send_transaction(
                 cmd.into(),
                 &self.pubkey,
             ))
-            .wallet_headers(&self.endpoints)
-            .send()
-            .await?;
-
-        let resp_json = resp
-            .json::<response::Response<response::SendResponse>>()
-            .await?;
-
-        if let Some(e) = resp_json.error {
-            return Err(e.into());
-        }
-
-        return Ok(resp_json.result.unwrap());
+            .await;
     }
 
     pub async fn sign<C: Into<commands::Command>>(&self, cmd: C) -> Result<SignResponse, Error> {
-        let resp = self
-            .clt
-            .post(&self.endpoints.request)
-            .json(&request::Request::new_sign_transaction(
+        return self
+            .request::<_, response::SignResponse>(request::Request::new_sign_transaction(
                 cmd.into(),
                 &self.pubkey,
             ))
-            .wallet_headers(&self.endpoints)
-            .send()
-            .await?;
-
-        let resp_json = resp
-            .json::<response::Response<response::SignResponse>>()
-            .await?;
-
-        if let Some(e) = resp_json.error {
-            return Err(e.into());
-        }
-
-        return Ok(resp_json.result.unwrap());
+            .await;
     }
 
     pub async fn list_keys(&self) -> Result<response::KeysResponse, Error> {
+        return self
+            .request::<_, response::KeysResponse>(request::Request::new_list_keys())
+            .await;
+    }
+
+    async fn request<REQ, RES>(&self, req: REQ) -> Result<RES, Error>
+    where
+        REQ: Serialize,
+        RES: DeserializeOwned,
+    {
         let resp = self
             .clt
             .post(&self.endpoints.request)
-            .json(&request::Request::new_list_keys())
+            .json(&req)
             .wallet_headers(&self.endpoints)
             .send()
             .await?;
 
-        let resp_json = resp
-            .json::<response::Response<response::KeysResponse>>()
-            .await?;
+        let resp_json = resp.json::<response::Response<RES>>().await?;
 
         if let Some(e) = resp_json.error {
             return Err(e.into());
