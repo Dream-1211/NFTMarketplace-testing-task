@@ -1,42 +1,128 @@
-# grin-core-algorithm
+# fabric-block-explorer
+Hyperledger fabric custom block explorer built using React JS as client and Node JS as server
 
-## Requirements
+## **Prerequisites**
 
-* rust 1.35+ (use [rustup]((https://www.rustup.rs/))- i.e. `curl https://sh.rustup.rs -sSf | sh; source $HOME/.cargo/env`)
-  * if rust is already installed, you can simply update version with `rustup update`
-* npm 10. You can install it from [here](https://nodejs.org/en/).
-* [neon](https://github.com/neon-bindings/neon). (install it by npm: `npm install --global neon-cli`)
+1. Nodejs 10.x.x
 
-For Debian-based distributions (Debian, Ubuntu, Mint, etc), to get the dependencies in a all-in-one line (except Rust and Npm):
+2. Fabric Network 
 
-```sh
-apt install build-essential cmake git libgit2-dev clang libncurses5-dev libncursesw5-dev zlib1g-dev pkg-config libssl-dev llvm
+3. Fabric Crypto material
+    
+## **Installation**
+
+First ensure you are in a new and empty directory.
+
+1. Clone the repository
+
+```
+git clone https://github.com/varuntejay/fabric-block-explorer
 ```
 
-For Mac:
+2. Change the directory to the server and install node modules
 
-```sh
-xcode-select --install
-brew install --with-toolchain llvm
-brew install pkg-config
-brew install openssl
+```
+cd ./server
+npm install
 ```
 
-## Build steps
+3. Change the directory to the client and install node modules
 
-```sh
-    git clone https://github.com/gottstech/grinwallet-nodejs.git
-    cd grinwallet-nodejs
-    neon build --release
-or  npm install
+```
+cd ./client
+npm install
 ```
 
-## Document
+## **Configuration**
 
-https://github.com/gottstech/grinwallet-nodejs/wiki
+1. Copy the peer TLS certificate from network crypto-config folder to the following directory
 
-## License
+```
+./server/src/certs
+```
+E.g. peer TLS certificate path in fabric samples - first network is following
 
-Apache License v2.0.
+```
+fabric-samples/first-network/crypto-config/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+```
 
+2. Copy the user certificate registered either from fabric-ca tool or custom tool to the following directory
+
+```
+./server/src/certs/hfc
+```
+
+  - If User certificate available. Please update the following globalconfig file with username
+  
+  ```
+  ./server/src/globalconfig.js
+  module.exports.FABRIC_CLIENT_USERNAME = '{username}'
+  ```
+  
+  - If you don't have scripts to generate user certificates. Please follow the steps listed below.
+  
+    - Open the following file in a code/text editor
+    
+    ```
+    ./server/src/globalconfig.js
+    ```
+    - Edit the following configuration to point to the fabric CA
+    
+    ```
+    module.exports.FABRIC_CA_URL='http://localhost:7054'    
+    module.exports.FABRIC_CLIENT_USERNAME = 'user1'
+    ```
+    - Next run the following scripts one after another.
+    
+     ```
+     ./server/src/fabric_ca/enrolladmin.js
+     ./server/src/fabric_ca/enrollaffiliation.js
+     ./server/src/fabric_ca/registeruser.js
+     ```
+     - With the above steps, a user certificate will be created under the following directory.
+     
+     ```
+     ./server/src/certs/hfc
+     ```
+ 3. Update the fabric configuration following global config file.
+ 
+ ```
+./server/src/globalconfig.js
+
+// 
+module.exports.FABRIC_CHANNEL_NAME = 'mychannel'
+module.exports.FABRIC_PEER_NAME = 'peer0.org1.example.com'    
+module.exports.FABRIC_PEER_ADDRESS = 'grpcs://localhost:7051'
+ ```
+## **Run node express back end server**
+
+1. First, ensure that you're in the fabric-block-explorer/server folder.
+
+2. Run the node express back end server in dev mode. This will up bring the express server on PORT 9086.
+
+```
+npm run dev
+```
+3. Make a test get call to express server. This will return "Hello from server".
+
+```
+http://localhost:9086
+```
+
+## **Run react front end application**
+
+1. First, ensure that you're in the fabric-block-explorer/client folder.
+
+2. Run the web application in dev mode. This will up bring the react front end application on PORT 4000.
+
+```
+npm run dev
+```
+3. Check out to the following URL to access the web application.
+
+```
+http://localhost:4000
+```
+
+<img src="frontend-sample.png" width="100%" height="100%"/>
 

@@ -1,7 +1,5 @@
-native/target
-native/index.node
-native/artifacts.json
-.idea/
-**/*~
-**/node_modules
-**/.DS_Store
+client/node_modules
+server/node_modules
+client/package-lock.json
+server/package-lock.json
+client/.next
