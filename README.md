@@ -1,128 +1,109 @@
-# fabric-block-explorer
-Hyperledger fabric custom block explorer built using React JS as client and Node JS as server
+## Full stack NFT marketplace built with Polygon, Solidity, IPFS, & Next.js
 
-## **Prerequisites**
+![Header](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/pfofv47dooojerkmfgr4.png)
 
-1. Nodejs 10.x.x
+This is the codebase to go along with tbe blog post [Building a Full Stack NFT Marketplace on Ethereum with Polygon](https://dev.to/dabit3/building-scalable-full-stack-apps-on-ethereum-with-polygon-2cfb)
 
-2. Fabric Network 
+### Running this project
 
-3. Fabric Crypto material
-    
-## **Installation**
+#### Gitpod
 
-First ensure you are in a new and empty directory.
+To deploy this project to Gitpod, follow these steps:
 
-1. Clone the repository
+1. Click this link to deploy
 
-```
-git clone https://github.com/varuntejay/fabric-block-explorer
-```
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#github.com/dabit3/polygon-ethereum-nextjs-marketplace)
 
-2. Change the directory to the server and install node modules
+2. Import the RPC address given to you by GitPod into your MetaMask wallet
+
+This endpoint will look something like this:
 
 ```
-cd ./server
+https://8545-copper-swordtail-j1mvhxv3.ws-eu18.gitpod.io/
+```
+
+The chain ID should be 1337. If you have a localhost rpc set up, you may need to overwrite it.
+
+![MetaMask RPC Import](wallet.png)
+
+#### Local setup
+
+To run this project locally, follow these steps.
+
+1. Clone the project locally, change into the directory, and install the dependencies:
+
+```sh
+git clone https://github.com/dabit3/polygon-ethereum-nextjs-marketplace.git
+
+cd polygon-ethereum-nextjs-marketplace
+
+# install using NPM or Yarn
 npm install
+
+# or
+
+yarn
 ```
 
-3. Change the directory to the client and install node modules
+2. Start the local Hardhat node
 
-```
-cd ./client
-npm install
-```
-
-## **Configuration**
-
-1. Copy the peer TLS certificate from network crypto-config folder to the following directory
-
-```
-./server/src/certs
-```
-E.g. peer TLS certificate path in fabric samples - first network is following
-
-```
-fabric-samples/first-network/crypto-config/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+```sh
+npx hardhat node
 ```
 
-2. Copy the user certificate registered either from fabric-ca tool or custom tool to the following directory
+3. With the network running, deploy the contracts to the local network in a separate terminal window
 
+```sh
+npx hardhat run scripts/deploy.js --network localhost
 ```
-./server/src/certs/hfc
-```
 
-  - If User certificate available. Please update the following globalconfig file with username
-  
-  ```
-  ./server/src/globalconfig.js
-  module.exports.FABRIC_CLIENT_USERNAME = '{username}'
-  ```
-  
-  - If you don't have scripts to generate user certificates. Please follow the steps listed below.
-  
-    - Open the following file in a code/text editor
-    
-    ```
-    ./server/src/globalconfig.js
-    ```
-    - Edit the following configuration to point to the fabric CA
-    
-    ```
-    module.exports.FABRIC_CA_URL='http://localhost:7054'    
-    module.exports.FABRIC_CLIENT_USERNAME = 'user1'
-    ```
-    - Next run the following scripts one after another.
-    
-     ```
-     ./server/src/fabric_ca/enrolladmin.js
-     ./server/src/fabric_ca/enrollaffiliation.js
-     ./server/src/fabric_ca/registeruser.js
-     ```
-     - With the above steps, a user certificate will be created under the following directory.
-     
-     ```
-     ./server/src/certs/hfc
-     ```
- 3. Update the fabric configuration following global config file.
- 
- ```
-./server/src/globalconfig.js
-
-// 
-module.exports.FABRIC_CHANNEL_NAME = 'mychannel'
-module.exports.FABRIC_PEER_NAME = 'peer0.org1.example.com'    
-module.exports.FABRIC_PEER_ADDRESS = 'grpcs://localhost:7051'
- ```
-## **Run node express back end server**
-
-1. First, ensure that you're in the fabric-block-explorer/server folder.
-
-2. Run the node express back end server in dev mode. This will up bring the express server on PORT 9086.
+4. Start the app
 
 ```
 npm run dev
 ```
-3. Make a test get call to express server. This will return "Hello from server".
 
+### Configuration
+
+To deploy to Polygon test or main networks, update the configurations located in __hardhat.config.js__ to use a private key and, optionally, deploy to a private RPC like Infura.
+
+```javascript
+require("@nomiclabs/hardhat-waffle");
+const fs = require('fs');
+const privateKey = fs.readFileSync(".secret").toString().trim() || "01234567890123456789";
+
+// infuraId is optional if you are using Infura RPC
+const infuraId = fs.readFileSync(".infuraid").toString().trim() || "";
+
+module.exports = {
+  defaultNetwork: "hardhat",
+  networks: {
+    hardhat: {
+      chainId: 1337
+    },
+    mumbai: {
+      // Infura
+      // url: `https://polygon-mumbai.infura.io/v3/${infuraId}`
+      url: "https://rpc-mumbai.matic.today",
+      accounts: [privateKey]
+    },
+    matic: {
+      // Infura
+      // url: `https://polygon-mainnet.infura.io/v3/${infuraId}`,
+      url: "https://rpc-mainnet.maticvigil.com",
+      accounts: [privateKey]
+    }
+  },
+  solidity: {
+    version: "0.8.4",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200
+      }
+    }
+  }
+};
 ```
-http://localhost:9086
-```
 
-## **Run react front end application**
-
-1. First, ensure that you're in the fabric-block-explorer/client folder.
-
-2. Run the web application in dev mode. This will up bring the react front end application on PORT 4000.
-
-```
-npm run dev
-```
-3. Check out to the following URL to access the web application.
-
-```
-http://localhost:4000
-```
-
-<img src="frontend-sample.png" width="100%" height="100%"/>
-
+If using Infura, update __.infuraid__ with your [Infura](https://infura.io/) project ID.
